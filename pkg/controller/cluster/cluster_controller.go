@@ -870,7 +870,16 @@ func (r *Reconciler) installOrUpgradeKSCoreInMemberCluster(ctx context.Context,
 	}
 	cluster.Annotations[installJobAnnotation] = jobName
 	delete(cluster.Annotations, ksCoreActionAnnotation)
-	cluster.Status.Conditions = []clusterv1alpha1.ClusterCondition{}
+
+	conditions := []clusterv1alpha1.ClusterCondition{}
+	for _, condition := range cluster.Status.Conditions {
+		if condition.Type == clusterv1alpha1.ClusterKSCoreReady || condition.Type == clusterv1alpha1.ClusterReady {
+			continue
+		}
+		conditions = append(conditions, condition)
+	}
+	cluster.Status.Conditions = conditions
+
 	if err := r.Update(ctx, cluster); err != nil {
 		return fmt.Errorf("failed to update cluster %s: %v", cluster.Name, err)
 	}
